@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>中一历史 - 切水果答题游戏</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #7EC8E3;
+            background-image: radial-gradient(#ffffff33 15%, transparent 16%), radial-gradient(#ffffff33 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* 彻底阻止浏览器的默认放大或滑动干扰 */
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: crosshair; 
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* 确保 UI 不会挡住滑鼠切水果 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        #top-bar {
+            background: rgba(255, 255, 255, 0.95);
+            border-bottom: 4px solid #FF9800;
+            width: 100%;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+
+        #question-text {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        #options-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .option {
+            background: #FFCA28;
+            border: 3px solid #FF9800;
+            border-radius: 12px;
+            padding: 8px 15px;
+            font-weight: bold;
+            color: #5D4037;
+            font-size: 16px;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 0 #FF9800, -2px -2px 0 #FF9800, 2px -2px 0 #FF9800, -2px 2px 0 #FF9800;
+            display: none;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .hidden { display: none !important; }
+
+        .title {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 42px;
+            color: #FFF;
+            text-shadow: 0 5px 0 #FF5722, 0 10px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 0 20px;
+            line-height: 1.2;
+        }
+
+        .btn {
+            background: #8BC34A;
+            border: none;
+            border-bottom: 6px solid #689F38;
+            border-radius: 50px;
+            padding: 12px 35px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-top: 15px;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            border-bottom: 0px solid #689F38;
+        }
+
+        .leaderboard-box {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            width: 85%;
+            max-width: 350px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .rank-text {
+            color: #4CAF50;
+            font-size: 22px;
+            font-weight: bold;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .name-input {
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #FF9800;
+            font-size: 16px;
+            width: 60%;
+            font-family: 'Nunito', sans-serif;
+            text-align: center;
+            outline: none;
+        }
+
+        .save-btn {
+            background: #FF9800;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .lb-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .lb-table th {
+            color: #FFCA28;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 5px;
+        }
+
+        .lb-table td {
+            padding: 5px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #flash-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #fff, #ffeb3b, #ff5722);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes explode-flash {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+        .anim-explode { animation: explode-flash 0.8s ease-out; }
+
+        #level-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: white;
+            text-shadow: 2px 2px 0 #4CAF50, -2px -2px 0 #4CAF50, 2px -2px 0 #4CAF50, -2px 2px 0 #4CAF50;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="flash-overlay"></div>
+
+    <div id="ui-layer">
+        <div id="score-board">分数: 0</div>
+        <div id="level-indicator">第 1 题 / 共 5 题</div>
+
+        <div id="top-bar">
+            <div id="question-text">题目内容</div>
+            <div id="options-container">
+                <div class="option" id="optA">A. </div>
+                <div class="option" id="optB">B. </div>
+                <div class="option" id="optC">C. </div>
+                <div class="option" id="optD">D. </div>
+            </div>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <div class="title">🍉 中一历史 🍍<br>切水果大挑战</div>
+            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin: 0 20px; max-width:400px;">
+                <p style="color: #FFF; font-size: 16px; text-align: left; line-height: 1.6; margin: 0; font-weight: bold;">
+                    📜 玩法规则：<br>
+                    1. 看清题目，划动或点击【正确答案字母】的水果过关。<br>
+                    2. 切掉普通水果可以加分，挑战最高排名！<br>
+                    ❌ 失败条件（立刻结束）：<br>
+                    • 切到错误答案的字母水果<br>
+                    • 切到黑色的炸弹 💣
+                </p>
+            </div>
+            <button class="btn" onclick="startGame()">开始游戏</button>
+        </div>
+
+        <div id="game-over-screen" class="screen hidden">
+            <div class="title" style="color: #FF5252; text-shadow: 0 5px 0 #B71C1C;">KABOOM! 💣<br>游戏结束</div>
+            <p id="game-over-reason" style="color: white; font-size: 20px; margin-bottom: 10px; font-weight: bold; text-align: center; padding: 0 20px;"></p>
+            <p style="color: #FFCA28; font-size: 22px; margin-bottom: 15px; font-weight: bold;">你的得分: <span id="final-score">0</span></p>
+            
+            <div class="leaderboard-box">
+                <div class="rank-text">当前排名：第 <span id="go-rank">1</span> 名！</div>
+                
+                <div id="go-input-area">
+                    <input type="text" id="go-player-name" class="name-input" placeholder="输入名字..." maxlength="15">
+                    <button class="save-btn" id="go-save-btn" onclick="saveAndShowBoard('go')">提交成绩</button>
+                </div>
+
+                <div id="go-board-area" class="hidden">
+                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:14px; font-weight:bold;">成绩已发送给老师！</p>
+                    <table class="lb-table" id="go-table"></table>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startGame()">重新开始</button>
+        </div>
+
+        <div id="victory-screen" class="screen hidden">
+            <div class="title" style="color: #FFD54F; text-shadow: 0 5px 0 #F57F17;">🎉 恭喜通关！ 🎉<br>历史小达人！</div>
+            <p style="color: white; font-size: 20px; margin-bottom: 10px; font-weight: bold;">你成功答对了所有题目！</p>
+            <p style="color: #FFCA28; font-size: 22px; margin-bottom: 15px; font-weight: bold;">最终得分: <span id="victory-score">0</span></p>
+            
+            <div class="leaderboard-box">
+                <div class="rank-text">当前排名：第 <span id="vic-rank">1</span> 名！</div>
+                
+                <div id="vic-input-area">
+                    <input type="text" id="vic-player-name" class="name-input" placeholder="输入名字..." maxlength="15">
+                    <button class="save-btn" id="vic-save-btn" onclick="saveAndShowBoard('vic')">提交成绩</button>
+                </div>
+
+                <div id="vic-board-area" class="hidden">
+                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:14px; font-weight:bold;">成绩已发送给老师！</p>
+                    <table class="lb-table" id="vic-table"></table>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startGame()">再玩一次</button>
+        </div>
+    </div>
+
+<script>
+    const questions = [
+        { q: "Zaman prasejarah di Malaysia bermula dengan manusia yang hidup secara...", opts: { A: "Bertani", B: "Berburu dan mengumpul makanan", C: "Berniaga", D: "Memelihara haiwan" }, ans: "B" },
+        { q: "Lembah Lenggong terletak di negeri manakah di Malaysia?", opts: { A: "Perak", B: "Selangor", C: "Johor", D: "Pahang" }, ans: "A" },
+        { q: "Manusia prasejarah yang pertama ditemui di Malaysia ialah...", opts: { A: "Homo sapiens", B: "Homo erectus", C: "Australopithecus", D: "Neanderthal" }, ans: "B" },
+        { q: "Alat yang diperbuat daripada batu yang telah diasah disebut...", opts: { A: "Alat batu lama", B: "Alat batu tengah", C: "Alat batu baru", D: "Alat logam" }, ans: "C" },
+        { q: "Kegiatan perdagangan awal di Malaysia melibatkan pertukaran barang yang dipanggil...", opts: { A: "Dagangan wang", B: "Barter", C: "Ekspor", D: "Import" }, ans: "B" }
+    ];
+
+    // --- Google Form 提交 ---
+    const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdgboKZoR50rj2kYCjvqyOzHanfcBiBFOwUEh5RYhFc4yFzlQ/formResponse";
+    
+    function submitToGoogleForm(playerName, playerScore) {
+        const params = new URLSearchParams();
+        params.append("entry.1164380443", playerName);
+        params.append("entry.1168292167", playerScore);
+
+        fetch(GOOGLE_FORM_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params
+        }).then(() => {
+            console.log("成绩已发送至 Google Form！");
+        }).catch(err => {
+            console.error("发送失败:", err);
+        });
+    }
+
+    const LB_KEY = "sejarah_fruit_ninja_scores";
+    
+    function getLeaderboard() {
+        let saved = localStorage.getItem(LB_KEY);
+        if (saved) return JSON.parse(saved);
+        return [
+            { name: "Jack 老师", score: 480 },
+            { name: "大恐龙", score: 280 },
+            { name: "切果达人", score: 150 },
+            { name: "新手", score: 50 }
+        ];
+    }
+
+    function calculateRank(currentScore) {
+        let board = getLeaderboard();
+        let rank = 1;
+        for (let entry of board) {
+            if (entry.score > currentScore) rank++;
+        }
+        return rank;
+    }
+
+    function saveAndShowBoard(prefix) {
+        let btn = document.getElementById(prefix + "-save-btn");
+        btn.disabled = true;
+
+        let nameInput = document.getElementById(prefix + "-player-name").value.trim();
+        if (!nameInput) nameInput = "神秘学生";
+
+        submitToGoogleForm(nameInput, score);
+
+        let board = getLeaderboard();
+        board.push({ name: nameInput, score: score });
+        board.sort((a, b) => b.score - a.score);
+        board = board.slice(0, 5); 
+        localStorage.setItem(LB_KEY, JSON.stringify(board));
+
+        document.getElementById(prefix + "-input-area").classList.add("hidden");
+        let tableDiv = document.getElementById(prefix + "-board-area");
+        tableDiv.classList.remove("hidden");
+
+        let html = '<tr><th>排名</th><th>名字</th><th>分数</th></tr>';
+        board.forEach((entry, index) => {
+            let rankIcon = (index === 0) ? '👑 1' : (index + 1);
+            let isMe = (entry.name === nameInput && entry.score === score) ? 'style="color:#76FF03;"' : '';
+            html += `<tr ${isMe}><td>${rankIcon}</td><td>${entry.name}</td><td>${entry.score}</td></tr>`;
+        });
+        document.getElementById(prefix + "-table").innerHTML = html;
+    }
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let isBgmPlaying = false;
+    let noiseBuffer;
+    let bgmTimeout;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+            const bufferSize = audioCtx.sampleRate * 2;
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSliceSound() {
+        if (!audioCtx) return;
+        const source = audioCtx.createBufferSource();
+        source.buffer = noiseBuffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = 4000;
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start();
+        source.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function playCorrectSound() {
+        if (!audioCtx) return;
+        const playTone = (freq, timeOffset) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + timeOffset);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime + timeOffset);
+            gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + timeOffset + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + timeOffset + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + timeOffset);
+            osc.stop(audioCtx.currentTime + timeOffset + 0.3);
+        };
+        playTone(523.25, 0); 
+        playTone(659.25, 0.1); 
+        playTone(783.99, 0.2); 
+    }
+
+    function playExplosionSound() {
+        if (!audioCtx) return;
+        const source = audioCtx.createBufferSource();
+        source.buffer = noiseBuffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 1.5);
+        filter.Q.value = 10;
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(1.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start();
+        source.stop(audioCtx.currentTime + 1.5);
+    }
+
+    const bgmNotes = [
+        {f: 392.00, d: 0.2}, {f: 329.63, d: 0.2}, {f: 261.63, d: 0.4},
+        {f: 293.66, d: 0.2}, {f: 329.63, d: 0.2}, {f: 392.00, d: 0.4},
+        {f: 440.00, d: 0.4}, {f: 392.00, d: 0.4}, {f: 329.63, d: 0.8}
+    ];
+    let bgmStep = 0;
+
+    function playBGM() {
+        if (!isBgmPlaying || !audioCtx) return;
+        const note = bgmNotes[bgmStep];
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = note.f;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + note.d * 0.9);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + note.d);
+        bgmStep = (bgmStep + 1) % bgmNotes.length;
+        bgmTimeout = setTimeout(playBGM, note.d * 1000);
+    }
+
+    function startBGM() {
+        if (!isBgmPlaying) {
+            isBgmPlaying = true;
+            bgmStep = 0;
+            playBGM();
+        }
+    }
+
+    function stopBGM() {
+        isBgmPlaying = false;
+        clearTimeout(bgmTimeout);
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let state = 'menu';
+    let currentQIndex = 0;
+    let score = 0;
+    let frames = 0;
+    
+    let objects = [];
+    let particles = [];
+    let trail = [];
+    let animationId = null;
+    let nextLetterIndex = 0; 
+
+    const fruitsConfig = [
+        { emoji: '🍉', color: '#FF3B30' },
+        { emoji: '🍎', color: '#FF3B30' },
+        { emoji: '🍌', color: '#FFCC00' },
+        { emoji: '🍊', color: '#FF9500' },
+        { emoji: '🍓', color: '#FF2D55' },
+        { emoji: '🍍', color: '#FFCC00' }
+    ];
+
+    function resetLeaderboardUI(prefix) {
+        document.getElementById(prefix + "-input-area").classList.remove("hidden");
+        document.getElementById(prefix + "-board-area").classList.add("hidden");
+        document.getElementById(prefix + "-player-name").value = "";
+        let btn = document.getElementById(prefix + "-save-btn");
+        if(btn) btn.disabled = false;
+    }
+
+    function startGame() {
+        initAudio();
+        startBGM();
+        
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('victory-screen').classList.add('hidden');
+        
+        resetLeaderboardUI('go');
+        resetLeaderboardUI('vic');
+
+        document.getElementById('top-bar').style.display = 'flex';
+        document.getElementById('score-board').style.display = 'block';
+        document.getElementById('level-indicator').style.display = 'block';
+        
+        document.getElementById('flash-overlay').classList.remove('anim-explode');
+        
+        currentQIndex = 0;
+        score = 0;
+        objects = [];
+        particles = [];
+        trail = [];
+        frames = 0;
+        state = 'playing';
+        nextLetterIndex = 0; 
+        updateUI();
+
+        if (animationId) cancelAnimationFrame(animationId);
+        gameLoop();
+    }
+
+    function loadNextQuestion() {
+        currentQIndex++;
+        objects = [];
+        nextLetterIndex = 0; 
+        if (currentQIndex >= questions.length) {
+            state = 'victory';
+            showVictory();
+        } else {
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        if (state !== 'playing') return;
+        const q = questions[currentQIndex];
+        document.getElementById('question-text').innerText = q.q;
+        document.getElementById('optA').innerText = `A. ${q.opts.A}`;
+        document.getElementById('optB').innerText = `B. ${q.opts.B}`;
+        document.getElementById('optC').innerText = `C. ${q.opts.C}`;
+        document.getElementById('optD').innerText = `D. ${q.opts.D}`;
+        document.getElementById('score-board').innerText = `分数: ${score}`;
+        document.getElementById('level-indicator').innerText = `第 ${currentQIndex + 1} 题 / 共 5 题`;
+    }
+
+    const GAME_GRAVITY = 0.065; 
+    const SPAWN_INTERVAL = 90;  
+
+    function spawnObject() {
+        if (state !== 'playing') return;
+
+        const isBomb = Math.random() < 0.15; 
+        const isLetter = !isBomb && Math.random() < 0.5; 
+        
+        let type = 'fruit';
+        let emoji = '';
+        let color = '';
+        let letter = '';
+
+        if (isBomb) {
+            type = 'bomb';
+            emoji = '💣';
+            color = '#333';
+        } else if (isLetter) {
+            type = 'letter';
+            const letters = ['A', 'B', 'C', 'D'];
+            letter = letters[nextLetterIndex];
+            nextLetterIndex = (nextLetterIndex + 1) % 4; 
+
+            const fc = fruitsConfig[Math.floor(Math.random() * fruitsConfig.length)];
+            emoji = fc.emoji;
+            color = fc.color;
+        } else {
+            type = 'fruit';
+            const fc = fruitsConfig[Math.floor(Math.random() * fruitsConfig.length)];
+            emoji = fc.emoji;
+            color = fc.color;
+        }
+
+        const radius = type === 'bomb' ? 60 : 85; 
+        const x = Math.random() * (width - 120) + 60;
+        const y = height + 60;
+        
+        const targetY = Math.random() * (height * 0.5) + height * 0.1; 
+        const vy = -Math.sqrt(2 * GAME_GRAVITY * (height - targetY + 60)); 
+        const vx = (width / 2 - x) * 0.003 + (Math.random() - 0.5) * 1.0;
+
+        objects.push({
+            type, emoji, color, letter,
+            x, y, vx, vy, radius,
+            rot: 0, rotSpeed: (Math.random() - 0.5) * 0.04,
+            sliced: false
+        });
+    }
+
+    function createParticles(x, y, color) {
+        for (let i = 0; i < 15; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                color,
+                life: 1.0,
+                size: Math.random() * 8 + 4
+            });
+        }
+    }
+
+    // --- 终极修复：最底层纯粹的坐标感应 ---
+    let isDrawing = false;
+    let lastMouse = null;
+
+    // 直接提取最真实的鼠标或手指坐标，不再经过缩放计算，彻底杜绝 NaN 错误
+    function getPos(e) {
+        let x = 0, y = 0;
+        if (e.touches && e.touches.length > 0) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        } else if (e.clientX !== undefined) {
+            x = e.clientX;
+            y = e.clientY;
+        }
+        return { x: x, y: y };
+    }
+
+    function handleInputStart(e) {
+        if (state !== 'playing') return;
+        if (e.cancelable) e.preventDefault(); 
+        
+        isDrawing = true;
+        trail = [];
+        const pos = getPos(e);
+        trail.push(pos);
+        lastMouse = pos;
+        
+        // 允许直接“点击”就切爆水果
+        checkCollisions(pos, pos); 
+    }
+
+    function handleInputMove(e) {
+        if (!isDrawing || state !== 'playing') return;
+        if (e.cancelable) e.preventDefault(); 
+        
+        const pos = getPos(e);
+        trail.push(pos);
+        if (trail.length > 10) trail.shift();
+        
+        checkCollisions(lastMouse, pos);
+        lastMouse = pos;
+    }
+
+    function handleInputEnd(e) {
+        isDrawing = false;
+        trail = [];
+    }
+
+    // 将事件绑定到最外层的 window 上，确保鼠标滑动再快也不会丢失判定
+    canvas.addEventListener('mousedown', handleInputStart, {passive: false});
+    window.addEventListener('mousemove', handleInputMove, {passive: false});
+    window.addEventListener('mouseup', handleInputEnd);
+    
+    canvas.addEventListener('touchstart', handleInputStart, {passive: false});
+    window.addEventListener('touchmove', handleInputMove, {passive: false});
+    window.addEventListener('touchend', handleInputEnd);
+
+    // 数学碰撞检测
+    function distSq(v, w) { return (v.x - w.x)**2 + (v.y - w.y)**2; }
+    function distToSegmentSq(p, v, w) {
+        let l2 = distSq(v, w);
+        if (l2 === 0) return distSq(p, v); 
+        let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return distSq(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+    }
+
+    function checkCollisions(p1, p2) {
+        for (let i = objects.length - 1; i >= 0; i--) {
+            let obj = objects[i];
+            if (obj.sliced) continue;
+
+            const dist = distToSegmentSq(obj, p1, p2);
+            if (dist < obj.radius * obj.radius) {
+                sliceObject(obj, i);
+            }
+        }
+    }
+
+    function sliceObject(obj, index) {
+        obj.sliced = true;
+        objects.splice(index, 1);
+        playSliceSound();
+
+        if (obj.type === 'bomb') {
+            createParticles(obj.x, obj.y, '#333');
+            triggerGameOver("嘭！你切到了炸弹！💣");
+            return;
+        }
+
+        createParticles(obj.x, obj.y, obj.color);
+
+        if (obj.type === 'letter') {
+            const correctAns = questions[currentQIndex].ans;
+            if (obj.letter === correctAns) {
+                playCorrectSound();
+                score += 50;
+                loadNextQuestion();
+            } else {
+                triggerGameOver(`切错啦！正确答案是 ${correctAns}。`);
+            }
+        } else {
+            score += 5;
+            document.getElementById('score-board').innerText = `分数: ${score}`;
+        }
+    }
+
+    function triggerGameOver(reason) {
+        state = 'gameover';
+        playExplosionSound();
+        stopBGM();
+        
+        const flash = document.getElementById('flash-overlay');
+        flash.classList.remove('anim-explode');
+        void flash.offsetWidth;
+        flash.classList.add('anim-explode');
+
+        document.getElementById('top-bar').style.display = 'none';
+        document.getElementById('score-board').style.display = 'none';
+        document.getElementById('level-indicator').style.display = 'none';
+        
+        document.getElementById('go-rank').innerText = calculateRank(score);
+
+        setTimeout(() => {
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('game-over-reason').innerText = reason;
+            document.getElementById('final-score').innerText = score;
+        }, 500);
+    }
+
+    function showVictory() {
+        stopBGM();
+        document.getElementById('top-bar').style.display = 'none';
+        document.getElementById('score-board').style.display = 'none';
+        document.getElementById('level-indicator').style.display = 'none';
+        
+        document.getElementById('vic-rank').innerText = calculateRank(score);
+
+        document.getElementById('victory-screen').classList.remove('hidden');
+        document.getElementById('victory-score').innerText = score;
+    }
+
+    function gameLoop() {
+        if (state !== 'playing' && state !== 'gameover') return;
+
+        ctx.clearRect(0, 0, width, height);
+
+        if (state === 'playing') {
+            frames++;
+            if (frames % SPAWN_INTERVAL === 0) {
+                let spawnCount = Math.floor(Math.random() * 2) + 1; 
+                for(let i=0; i<spawnCount; i++) spawnObject();
+            }
+        }
+
+        for (let i = objects.length - 1; i >= 0; i--) {
+            let obj = objects[i];
+            
+            obj.vy += GAME_GRAVITY;
+            obj.x += obj.vx;
+            obj.y += obj.vy;
+            obj.rot += obj.rotSpeed;
+
+            if (obj.y > height + 100) {
+                objects.splice(i, 1);
+                continue;
+            }
+
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rot);
+            
+            const displayRadius = obj.type === 'bomb' ? 55 : 65;
+
+            ctx.font = `${displayRadius * 1.5}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(obj.emoji, 0, 0);
+
+            if (obj.type === 'letter') {
+                ctx.beginPath();
+                ctx.arc(0, 0, displayRadius * 0.65, 0, Math.PI * 2); 
+                ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#222";
+                ctx.stroke();
+
+                ctx.font = `900 ${displayRadius * 0.9}px Arial`; 
+                ctx.fillStyle = "#111";
+                ctx.fillText(obj.letter, 0, displayRadius * 0.1); 
+            }
+
+            ctx.restore();
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += GAME_GRAVITY * 2; 
+            p.life -= 0.03;
+
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        if (trail.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(trail[0].x, trail[0].y);
+            for (let i = 1; i < trail.length; i++) {
+                ctx.lineTo(trail[i].x, trail[i].y);
+            }
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.stroke();
+            
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#76FF03";
+            ctx.stroke();
+        }
+
+        if (state === 'playing' || state === 'gameover') {
+            animationId = requestAnimationFrame(gameLoop);
+        }
+    }
+
+    ctx.clearRect(0, 0, width, height);
+
+</script>
+</body>
+</html>
