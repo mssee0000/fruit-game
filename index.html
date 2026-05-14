@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>中一历史 - 切水果答题游戏</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
 
         body, html {
             margin: 0;
@@ -20,7 +20,7 @@
             font-family: 'Nunito', sans-serif;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none; /* 彻底阻止浏览器的默认放大或滑动干扰 */
+            touch-action: none;
         }
 
         #gameCanvas {
@@ -40,18 +40,19 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            pointer-events: none; /* 确保 UI 不会挡住滑鼠切水果 */
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
         }
 
+        /* 优化：缩小上方题目的整体占用空间，把分数和题号塞进白框里防止重叠 */
         #top-bar {
             background: rgba(255, 255, 255, 0.95);
             border-bottom: 4px solid #FF9800;
             width: 100%;
-            padding: 15px 20px;
+            padding: 8px 15px 12px 15px; /* 减小内边距 */
             box-sizing: border-box;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             display: none;
@@ -61,46 +62,59 @@
             border-bottom-right-radius: 20px;
         }
 
+        #hud-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 5px;
+            align-items: center;
+        }
+
+        #score-board {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 16px;
+            color: #FF9800;
+            display: none;
+        }
+
+        #level-indicator {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+            font-size: 16px;
+            color: #4CAF50;
+            display: none;
+        }
+
         #question-text {
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 16px; /* 缩小题目字体 */
             color: #333;
             text-align: center;
-            margin-bottom: 15px;
-            line-height: 1.3;
+            margin-bottom: 8px; /* 减小间距 */
+            line-height: 1.2;
         }
 
         #options-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 6px; /* 减小选项间距 */
             width: 100%;
             max-width: 800px;
         }
 
         .option {
             background: #FFCA28;
-            border: 3px solid #FF9800;
-            border-radius: 12px;
-            padding: 8px 15px;
+            border: 2px solid #FF9800;
+            border-radius: 8px; /* 圆角变小一点 */
+            padding: 5px 10px; /* 减小内边距 */
             font-weight: bold;
             color: #5D4037;
-            font-size: 16px;
+            font-size: 14px; /* 缩小选项字体 */
             font-family: 'Nunito', sans-serif;
-        }
-
-        #score-board {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 24px;
-            color: white;
-            text-shadow: 2px 2px 0 #FF9800, -2px -2px 0 #FF9800, 2px -2px 0 #FF9800, -2px 2px 0 #FF9800;
-            display: none;
+            line-height: 1.2;
         }
 
         .screen {
@@ -123,64 +137,64 @@
         .title {
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            font-size: 42px;
+            font-size: 38px;
             color: #FFF;
-            text-shadow: 0 5px 0 #FF5722, 0 10px 15px rgba(0,0,0,0.5);
+            text-shadow: 0 4px 0 #FF5722, 0 8px 12px rgba(0,0,0,0.5);
             text-align: center;
             margin-bottom: 10px;
-            padding: 0 20px;
+            padding: 0 15px;
             line-height: 1.2;
         }
 
         .btn {
             background: #8BC34A;
             border: none;
-            border-bottom: 6px solid #689F38;
+            border-bottom: 5px solid #689F38;
             border-radius: 50px;
-            padding: 12px 35px;
+            padding: 10px 30px;
             font-family: 'Nunito', sans-serif;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 18px;
             color: white;
             cursor: pointer;
             transition: transform 0.1s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            margin-top: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-top: 10px;
         }
 
         .btn:active {
-            transform: translateY(6px);
+            transform: translateY(5px);
             border-bottom: 0px solid #689F38;
         }
 
         .leaderboard-box {
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 12px;
             width: 85%;
-            max-width: 350px;
-            margin-bottom: 15px;
+            max-width: 320px;
+            margin-bottom: 12px;
             text-align: center;
         }
 
         .rank-text {
             color: #4CAF50;
-            font-size: 22px;
+            font-size: 18px;
             font-weight: bold;
             background: white;
-            padding: 5px 15px;
-            border-radius: 20px;
+            padding: 4px 12px;
+            border-radius: 15px;
             display: inline-block;
-            margin-bottom: 10px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         .name-input {
-            padding: 10px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 8px;
             border: 2px solid #FF9800;
-            font-size: 16px;
+            font-size: 15px;
             width: 60%;
             font-family: 'Nunito', sans-serif;
             text-align: center;
@@ -191,9 +205,9 @@
             background: #FF9800;
             border: none;
             color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 16px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             font-family: 'Nunito', sans-serif;
@@ -208,18 +222,19 @@
             width: 100%;
             border-collapse: collapse;
             color: white;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .lb-table th {
             color: #FFCA28;
             border-bottom: 2px solid rgba(255,255,255,0.3);
-            padding-bottom: 5px;
+            padding-bottom: 4px;
+            font-size: 15px;
         }
 
         .lb-table td {
-            padding: 5px 0;
-            font-size: 18px;
+            padding: 4px 0;
+            font-size: 16px;
             font-weight: bold;
         }
 
@@ -238,18 +253,6 @@
             100% { opacity: 0; transform: scale(1); }
         }
         .anim-explode { animation: explode-flash 0.8s ease-out; }
-
-        #level-indicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 20px;
-            color: white;
-            text-shadow: 2px 2px 0 #4CAF50, -2px -2px 0 #4CAF50, 2px -2px 0 #4CAF50, -2px 2px 0 #4CAF50;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -258,10 +261,11 @@
     <div id="flash-overlay"></div>
 
     <div id="ui-layer">
-        <div id="score-board">分数: 0</div>
-        <div id="level-indicator">第 1 题 / 共 5 题</div>
-
         <div id="top-bar">
+            <div id="hud-container">
+                <div id="score-board">分数: 0</div>
+                <div id="level-indicator">第 1 题 / 共 5 题</div>
+            </div>
             <div id="question-text">题目内容</div>
             <div id="options-container">
                 <div class="option" id="optA">A. </div>
@@ -273,8 +277,8 @@
 
         <div id="start-screen" class="screen">
             <div class="title">🍉 中一历史 🍍<br>切水果大挑战</div>
-            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 15px; margin: 0 20px; max-width:400px;">
-                <p style="color: #FFF; font-size: 16px; text-align: left; line-height: 1.6; margin: 0; font-weight: bold;">
+            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin: 0 20px; max-width:350px;">
+                <p style="color: #FFF; font-size: 15px; text-align: left; line-height: 1.5; margin: 0; font-weight: bold;">
                     📜 玩法规则：<br>
                     1. 看清题目，划动或点击【正确答案字母】的水果过关。<br>
                     2. 切掉普通水果可以加分，挑战最高排名！<br>
@@ -287,9 +291,9 @@
         </div>
 
         <div id="game-over-screen" class="screen hidden">
-            <div class="title" style="color: #FF5252; text-shadow: 0 5px 0 #B71C1C;">KABOOM! 💣<br>游戏结束</div>
-            <p id="game-over-reason" style="color: white; font-size: 20px; margin-bottom: 10px; font-weight: bold; text-align: center; padding: 0 20px;"></p>
-            <p style="color: #FFCA28; font-size: 22px; margin-bottom: 15px; font-weight: bold;">你的得分: <span id="final-score">0</span></p>
+            <div class="title" style="color: #FF5252; text-shadow: 0 4px 0 #B71C1C;">KABOOM! 💣<br>游戏结束</div>
+            <p id="game-over-reason" style="color: white; font-size: 18px; margin-bottom: 8px; font-weight: bold; text-align: center; padding: 0 20px;"></p>
+            <p style="color: #FFCA28; font-size: 20px; margin-bottom: 12px; font-weight: bold;">你的得分: <span id="final-score">0</span></p>
             
             <div class="leaderboard-box">
                 <div class="rank-text">当前排名：第 <span id="go-rank">1</span> 名！</div>
@@ -300,7 +304,7 @@
                 </div>
 
                 <div id="go-board-area" class="hidden">
-                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:14px; font-weight:bold;">成绩已发送给老师！</p>
+                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:13px; font-weight:bold;">成绩已发送给老师！</p>
                     <table class="lb-table" id="go-table"></table>
                 </div>
             </div>
@@ -309,9 +313,9 @@
         </div>
 
         <div id="victory-screen" class="screen hidden">
-            <div class="title" style="color: #FFD54F; text-shadow: 0 5px 0 #F57F17;">🎉 恭喜通关！ 🎉<br>历史小达人！</div>
-            <p style="color: white; font-size: 20px; margin-bottom: 10px; font-weight: bold;">你成功答对了所有题目！</p>
-            <p style="color: #FFCA28; font-size: 22px; margin-bottom: 15px; font-weight: bold;">最终得分: <span id="victory-score">0</span></p>
+            <div class="title" style="color: #FFD54F; text-shadow: 0 4px 0 #F57F17;">🎉 恭喜通关！ 🎉<br>历史小达人！</div>
+            <p style="color: white; font-size: 18px; margin-bottom: 8px; font-weight: bold;">你成功答对了所有题目！</p>
+            <p style="color: #FFCA28; font-size: 20px; margin-bottom: 12px; font-weight: bold;">最终得分: <span id="victory-score">0</span></p>
             
             <div class="leaderboard-box">
                 <div class="rank-text">当前排名：第 <span id="vic-rank">1</span> 名！</div>
@@ -322,7 +326,7 @@
                 </div>
 
                 <div id="vic-board-area" class="hidden">
-                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:14px; font-weight:bold;">成绩已发送给老师！</p>
+                    <p style="color:#76FF03; margin-top:0; margin-bottom:5px; font-size:13px; font-weight:bold;">成绩已发送给老师！</p>
                     <table class="lb-table" id="vic-table"></table>
                 </div>
             </div>
@@ -340,7 +344,6 @@
         { q: "Kegiatan perdagangan awal di Malaysia melibatkan pertukaran barang yang dipanggil...", opts: { A: "Dagangan wang", B: "Barter", C: "Ekspor", D: "Import" }, ans: "B" }
     ];
 
-    // --- Google Form 提交 ---
     const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdgboKZoR50rj2kYCjvqyOzHanfcBiBFOwUEh5RYhFc4yFzlQ/formResponse";
     
     function submitToGoogleForm(playerName, playerScore) {
@@ -677,11 +680,9 @@
         }
     }
 
-    // --- 终极修复：最底层纯粹的坐标感应 ---
     let isDrawing = false;
     let lastMouse = null;
 
-    // 直接提取最真实的鼠标或手指坐标，不再经过缩放计算，彻底杜绝 NaN 错误
     function getPos(e) {
         let x = 0, y = 0;
         if (e.touches && e.touches.length > 0) {
@@ -703,8 +704,6 @@
         const pos = getPos(e);
         trail.push(pos);
         lastMouse = pos;
-        
-        // 允许直接“点击”就切爆水果
         checkCollisions(pos, pos); 
     }
 
@@ -725,7 +724,6 @@
         trail = [];
     }
 
-    // 将事件绑定到最外层的 window 上，确保鼠标滑动再快也不会丢失判定
     canvas.addEventListener('mousedown', handleInputStart, {passive: false});
     window.addEventListener('mousemove', handleInputMove, {passive: false});
     window.addEventListener('mouseup', handleInputEnd);
@@ -734,7 +732,6 @@
     window.addEventListener('touchmove', handleInputMove, {passive: false});
     window.addEventListener('touchend', handleInputEnd);
 
-    // 数学碰撞检测
     function distSq(v, w) { return (v.x - w.x)**2 + (v.y - w.y)**2; }
     function distToSegmentSq(p, v, w) {
         let l2 = distSq(v, w);
